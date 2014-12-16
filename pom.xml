@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>jds.s3shell</groupId>
+    <artifactId>s3shell</artifactId>
+    <version>0.6.0-SNAPSHOT</version>
+
+    <properties>
+
+        <slf4j.version>1.7.7</slf4j.version>
+        <log4j.version>1.2.16</log4j.version>
+
+        <h2.version>1.4.178</h2.version>
+        <spring-data.version>1.6.0.RELEASE</spring-data.version>
+        <hibernate-jpa.version>1.0.0.Final</hibernate-jpa.version>
+        <hibernate-entitymanager.version>4.3.5.Final</hibernate-entitymanager.version>
+
+        <commons-configuration.version>1.10</commons-configuration.version>
+        <commons-dbcp.version>1.4</commons-dbcp.version>
+        <commons.pool.version>1.5.4</commons.pool.version>
+        <commons.io.version>2.4</commons.io.version>
+
+        <spring.version>3.2.9.RELEASE</spring.version>
+        <spring-plugin.version>1.0.0.RELEASE</spring-plugin.version>
+        <spring-data.version>1.5.0.RELEASE</spring-data.version>
+
+        <liquibase.version>3.2.0</liquibase.version>
+        <google-gson.version>2.3</google-gson.version>
+        <junit.version>4.11</junit.version>
+        <mockito.version>1.9.5</mockito.version>
+
+        <amazon.sdk.version>1.7.12</amazon.sdk.version>
+
+        <jcsv.version>1.4.0</jcsv.version>
+    </properties>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>asg.cliche</groupId>
+            <artifactId>cliche</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk</artifactId>
+            <version>${amazon.sdk.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-jpa</artifactId>
+            <version>${spring-data.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aspects</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+
+
+        <!-- logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.mattbertolini</groupId>
+            <artifactId>liquibase-slf4j</artifactId>
+            <version>1.2.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hibernate.javax.persistence</groupId>
+            <artifactId>hibernate-jpa-2.1-api</artifactId>
+            <version>${hibernate-jpa.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-entitymanager</artifactId>
+            <version>${hibernate-entitymanager.version}</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>${h2.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.liquibase</groupId>
+            <artifactId>liquibase-core</artifactId>
+            <version>${liquibase.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>${google-gson.version}</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>${spring.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-configuration</groupId>
+            <artifactId>commons-configuration</artifactId>
+            <version>${commons-configuration.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-dbcp</groupId>
+            <artifactId>commons-dbcp</artifactId>
+            <version>${commons-dbcp.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-pool</groupId>
+            <artifactId>commons-pool</artifactId>
+            <version>${commons.pool.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${commons.io.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.googlecode.jcsv</groupId>
+            <artifactId>jcsv</artifactId>
+            <version>${jcsv.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+
+        <!--
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>*.properties</exclude>
+                    <exclude>*.xml</exclude>
+                </excludes>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
+
+        <finalName>${project.artifactId}</finalName>
+        -->
+        <plugins>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>admin-tools-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>jds.s3shell.S3Shell</mainClass>
+                        </manifest>
+                        <manifestEntries>
+                            <Project-Version>${project.parent.version}</Project-Version>
+                            <Timestamp>${timestamp}</Timestamp>
+                        </manifestEntries>
+                    </archive>
+                    <descriptors>
+                        <descriptor>src/assemble/all.xml</descriptor>
+                        <descriptor>src/assemble/admin-tools.xml</descriptor>
+                    </descriptors>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet id="1" author="jsvede">
+        <comment>Tables for bucket details storage</comment>
+        <createTable tableName="bucket">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="alias" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="bucket_name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="clob">
+                <constraints nullable="true"/>
+            </column>
+            <column name="access_key" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="secret_key" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+    </changeSet>
+
+    <changeSet id="2" author="jsvede">
+        <comment>Adding region column for buckets.</comment>
+        <addColumn tableName="bucket">
+            <column name="region" type="varchar(255)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="3" author="jsvede">
+        <comment>Table for command history</comment>
+        <createTable tableName="history">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="command" type="clob">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>
