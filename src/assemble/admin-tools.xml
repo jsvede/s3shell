@@ -1,0 +1,41 @@
+<assembly
+    xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0 http://maven.apache.org/xsd/assembly-1.1.0.xsd">
+    <id>dist</id>
+    <formats>
+        <format>zip</format>
+    </formats>
+    <baseDirectory>dist</baseDirectory>
+    <fileSets>
+
+        <fileSet>
+            <directory>${basedir}/target</directory>
+            <includes>
+                <include>s3shell-*-all.jar</include>
+            </includes>
+            <outputDirectory></outputDirectory>
+            <fileMode>755</fileMode>
+        </fileSet>
+
+        <fileSet>
+            <directory>${basedir}/src/main/scripts</directory>
+            <includes>
+                <include>s3shell.sh</include>
+            </includes>
+            <outputDirectory></outputDirectory>
+            <fileMode>755</fileMode>
+            <directoryMode>755</directoryMode>
+        </fileSet>
+
+        <fileSet>
+            <directory>${basedir}/src/main/resources</directory>
+            <includes>
+                <include>log4j.xml</include>
+            </includes>
+            <outputDirectory></outputDirectory>
+            <fileMode>644</fileMode>
+        </fileSet>
+
+    </fileSets>
+</assembly>
