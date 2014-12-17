@@ -95,12 +95,18 @@ Cliche has 2 great built-in features for help: ?list and ?help . List shows the 
 while Help lets you get more info for a given command.
 
 ###List Buckets
-Abbreviation: lb
+```
+Command: list-buckets
+Abbrev:  lb
+Params:  (p1)
+Description: List all bucket information stored within this s3shell instance
+```
 Description: Lists the buckets you have added to your instance of S3Shell. The command also takes the optional
 argument "-la" which will show the access key and the secret key. Normally it only shows the bucket name and the
 bucket alias.
 
 ###Add Buckets
+```
 Command: add-bucket
 Abbrev:  add
 Params:  (alias, bucketName, accessKey, secretKey)
@@ -110,14 +116,16 @@ alias	String	An alias for the bucket name
 bucketName	String	The literal value for the bucket name
 accessKey	String	The access key for the bucket
 secretKey	String	The secret key for the bucket
-
+```
 This is way you can manually add a bucket to the list of buckets being managed by this instance. You can also import
 buckets via a CSV file using the import command.
 
 ###Importing Buckets
+```
 Command: import-buckets
 Abbrev:  import
 Params:  (fileName)
 Description: Import a set of buckets from a CSV file into this S3Shell instance.
 Number of parameters: 1
 fileName	String	The fully qualified path and file name of your CSV file from which to read.
+```
