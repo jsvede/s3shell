@@ -29,9 +29,9 @@ You can get the complete command line as executable in the releases/ directory a
 After downloading the release of your choice, you install S3Shell by unzipping the zip file archive. 
 This will create a directory named s3shell in whatever location.
 ```
-s3shell/s3shell-1.0.0-dist-all.jar
-s3shell/s3shell.sh
-s3shell/log4j.xml
+dist/s3shell-0.5.0-dist-all.jar
+dist/s3shell.sh
+dist/log4j.xml
 ```
 The jar file is an all inclusive jar and includes all the required dependencies. The s3shell.sh is the script that
 starts the shell. The log4.xml helps control logging to the terminal. All 3 are required.
@@ -128,4 +128,97 @@ Params:  (fileName)
 Description: Import a set of buckets from a CSV file into this S3Shell instance.
 Number of parameters: 1
 fileName	String	The fully qualified path and file name of your CSV file from which to read.
+```
+
+###Exporting Buckets
+```
+Command: export-buckets
+Abbrev:  export
+Params:  (fileName)
+Description: Export all buckets from this instance of S3Shell to a CSV file.
+Number of parameters: 1
+fileName	String	The fully qualified path and file name of the file you wish to write to.
+```
+###Removing a Bucket
+```
+Command: remove-bucket
+Abbrev:  rmb
+Params:  (bucketAlias)
+Description: Removes a bucket from the list of buckets in Blister
+Number of parameters: 1
+bucketAlias	String	The alias by which the bucket is referenced
+```
+
+### Switching Buckets
+```
+Command: change-bucket
+Abbrev:  cb
+Params:  (bucketAlias)
+Description: Use the bucket alias that the user passes in.
+Number of parameters: 1
+bucketAlias	String	sets the current bucket to the one associated with the passed in alias.
+```
+The change-bucket command allows you to treat each bucket as a root directory in a file system. By changing buckets you
+are changing the context that is used for other commands.
+
+### Retrieve a Remote File
+```
+Command: download-file
+Abbrev:  get
+Params:  (remotePath, localPath)
+Description: Retrieve a file from the specified remote path and write it to the specified local path.
+Number of parameters: 2
+remotePath	String	The path on the current bucket you want to retrieve
+localPath	String	The fully qualified name for the local file. The remote file name is appended to the localFile path
+```
+In this case the paths are both fully qualified and include the name. 
+
+### Upload a Local File 
+```
+Command: put-file
+Abbrev:  put
+Params:  (localFile, remotePath)
+Description: Put a file on the current bucket.
+Number of parameters: 2
+localFile	String	The fully qualified path of a local file for upload.
+remotePath	String	The remote file path to upload the file to.
+```
+As with 'get' this command also expects fully qualifed names.
+
+### Delete A File
+```
+Abbrev:  rm
+Params:  (filePath)
+Description: Remove the specified file from current bucket
+Number of parameters: 1
+filePath	String	The path on the bucket to delete.
+```
+
+### Changing Directories
+```
+Command: change-directory
+Abbrev:  cd
+Params:  (path)
+Description: Change the directories to the specified directory in the path argument
+Number of parameters: 1
+path	String	For the specified bucket, list the path passed in
+```
+This command allows you to set a directory for the list command to use while showing directory contents. Directories
+don't existing as they do on a filesystem. In S3 they are simply part of the file name; the purpose of this command is
+to simplify the relationship between the whole file name and the perceived pathing on the bucket.
+
+### Listing Directories or Files
+```
+Command: list
+Abbrev:  ls
+Params:  (path)
+Description: For the bucket that the user selected, list the path that is passed in
+Number of parameters: 1
+path	String	For the specified bucket, list the path passed in
+
+Command: list
+Abbrev:  ls
+Params:  ()
+Description: For the bucket that the user selected, list the path that would be listed in pwd
+No parameters.
 ```
