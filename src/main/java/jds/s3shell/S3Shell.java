@@ -40,6 +40,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.googlecode.jcsv.CSVStrategy;
@@ -222,6 +223,10 @@ public class S3Shell implements ShellCommandHandler {
     public void changeDirectory(@Param(name = "path",
             description = "For the specified bucket, list the path passed in")String path) {
 
+        if(path.startsWith("/")) {
+            path = path.substring(1);
+            System.out.println("removing leading '/' because it is unnecessary and is interpreted as a literal path");
+        }
         if(path.endsWith("/")) {
             presentWorkingDirectory = path;
         } else {
@@ -322,13 +327,20 @@ public class S3Shell implements ShellCommandHandler {
                           @Param(name = "remotePath",
                                  description = "The remote file path to upload the file to.")String remotePath) {
 
+        //TODO: add argument validation; NPEs are possible here though I think cliche prevents this.
         File fileForUpload = new File(localFile);
+        if(remotePath.startsWith("/")) {
+            remotePath = remotePath.substring(1);
+            System.out.println("removing leading '/' because it is unnecessary and is interpreted as a literal path");
+        }
         if(remotePath.endsWith(".")) {
             String shortFileName = fileForUpload.getName();
             String remoteFilePathStr = remotePath.substring(0, remotePath.length()-1);
             remotePath = remoteFilePathStr + "/" + shortFileName;
         }
-        s3client.putObject(new PutObjectRequest(selectedBucket.getBucketName(), remotePath, fileForUpload));
+        PutObjectResult result = s3client.putObject(new PutObjectRequest(selectedBucket.getBucketName(), remotePath, fileForUpload));
+        String contentMd5String = result.getContentMd5();
+        System.out.println("md5: " + contentMd5String);
 
         return "Successfully uploaded " + remotePath;
     }
