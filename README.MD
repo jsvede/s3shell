@@ -23,7 +23,8 @@ the command history, otherwise I am using Cliche as it was written. I am gratefu
 of Cliche, for his answers on how to use the library.
 
 ##Getting S3Shell
-You can get the complete command line as executable in the releases/ directory at the root of this project.
+You can get the current version of the complete command line as executable in the releases/current directory at the 
+root of this project.
 
 ##Installing S3Shell
 After downloading the release of your choice, you install S3Shell by unzipping the zip file archive. 
