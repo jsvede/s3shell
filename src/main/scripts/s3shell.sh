@@ -16,6 +16,6 @@ fi
 
 export JAVA_OPTIONS="-Xms1024m -Xmx1024m -XX:NewSize=256m -XX:MaxNewSize=256m -XX:PermSize=256m -XX:MaxPermSize=256m"
 
-COMMAND="java $JAVA_OPTIONS $REMOTE_DEBUGGER -Dspring.profiles.active=s3shell.h2 -Dfile.encoding=UTF-8 -cp $PWD:$PWD/s3shell-0.5.2-all.jar jds.s3shell.S3Shell"
+COMMAND="java $JAVA_OPTIONS $REMOTE_DEBUGGER -Dspring.profiles.active=s3shell.h2 -Dfile.encoding=UTF-8 -cp $PWD:$PWD/s3shell-0.5.3-SNAPSHOT-all.jar jds.s3shell.S3Shell"
 
 $COMMAND

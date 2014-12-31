@@ -6,7 +6,7 @@
     <formats>
         <format>zip</format>
     </formats>
-    <baseDirectory>dist</baseDirectory>
+    <baseDirectory>s3shell</baseDirectory>
     <fileSets>
 
         <fileSet>
