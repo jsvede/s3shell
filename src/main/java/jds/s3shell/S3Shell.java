@@ -31,6 +31,7 @@ package jds.s3shell;
 import asg.cliche.CLIException;
 import asg.cliche.Command;
 import asg.cliche.Param;
+import asg.cliche.Shell;
 import asg.cliche.ShellFactory;
 import asg.cliche.asg.cliche.ext.ShellCommandHandler;
 import com.amazonaws.ClientConfiguration;
@@ -98,6 +99,8 @@ public class S3Shell implements ShellCommandHandler {
     private AmazonS3Client s3client = null;
 
     private DownloadProgress downloadProgress;
+
+    private static Shell shell;
 
     public S3Shell(ApplicationContext ctx) {
         context = ctx;
@@ -257,7 +260,7 @@ public class S3Shell implements ShellCommandHandler {
         long historyCount = 1;
         while(historyIt.hasNext()) {
             CommandHistory his = historyIt.next();
-            sb.append(historyCount).append("  ").append(his.getCommand()).append("\n");
+            sb.append(his.getId()).append("  ").append(his.getCommand()).append("\n");
             historyCount++;
         }
         return sb.toString();
@@ -462,17 +465,33 @@ public class S3Shell implements ShellCommandHandler {
     @Override
     public void processCommand(String cmdLine) throws CLIException {
 
+        if(cmdLine != null && cmdLine.startsWith("!")) {
+            String[] commandParts = cmdLine.split(" ");
+            long commandId = Long.parseLong(commandParts[1].trim());
+            CommandHistory hist = commandRepo.findOne(commandId);
+            CommandHistory newHist = new CommandHistory();
+            newHist.setCommand(hist.getCommand());
+            commandRepo.save(newHist);
+            return;
+        }
         CommandHistory history = new CommandHistory(cmdLine);
         commandRepo.save(history);
 
     }
 
-//    //TODO: leverage history via the number
-//    @Command(abbrev="!")
-//    public String bang(Integer commandNumber) {
-//
-//        return "Command #" + commandNumber;
-//    }
+
+    @Command(abbrev="!",
+             description = "The command to re-execute a given command in history")
+    public void bang(@Param(name = "commandHistory",
+                            description = "The command number to re-excute.") Integer commandNumber) {
+
+        CommandHistory history = commandRepo.findOne(commandNumber.longValue());
+        try {
+            shell.processLine(history.getCommand());
+        } catch (CLIException e) {
+            e.printStackTrace();
+        }
+    }
 
     @Override
     public void cliEnterLoop() {
@@ -488,6 +507,7 @@ public class S3Shell implements ShellCommandHandler {
 
         ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
 
-        ShellFactory.createConsoleShell("s3sh", "S3 Shell", new S3Shell(context)).commandLoop();
+        shell = ShellFactory.createConsoleShell("s3sh", "S3 Shell", new S3Shell(context));
+        shell.commandLoop();
     }
 }
