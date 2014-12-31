@@ -26,6 +26,9 @@ of Cliche, for his answers on how to use the library.
 You can get the current version of the complete command line as executable in the releases/current directory at the 
 root of this project.
 
+##Dependencies
+You'll need to have a version of Java installed, 1.7 or higher, in order to use s3shell.
+
 ##Installing S3Shell
 After downloading the release of your choice, you install S3Shell by unzipping the zip file archive. 
 This will create a directory named s3shell in whatever location.
