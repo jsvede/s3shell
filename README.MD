@@ -30,8 +30,9 @@ root of this project.
 After downloading the release of your choice, you install S3Shell by unzipping the zip file archive. 
 This will create a directory named s3shell in whatever location.
 ```
-dist/s3shell-0.5.0-dist-all.jar
+dist/s3shell-0.5.2-dist-all.jar
 dist/s3shell.sh
+dist/s3shell.bat
 dist/log4j.xml
 ```
 The jar file is an all inclusive jar and includes all the required dependencies. The s3shell.sh is the script that
@@ -89,7 +90,7 @@ here. If not, please send me a note and I'll fix it.
 Simply type 'exit' and the shell will terminate and return you to the OS command line.
 
 ##Supported Operating Systems
-Linux and OS X. I don't have a Windows machine so I don't have a system to test it on.
+Linux and OS X and Windows (experimental).
 
 ##Command
 Cliche has 2 great built-in features for help: ?list and ?help . List shows the commands and their parameters
