@@ -65,11 +65,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -205,12 +207,39 @@ public class S3Shell implements ShellCommandHandler {
                 path = "";
             }
 
+            int totalFileCount = 0;
+
             ObjectListing listing = s3client.listObjects(selectedBucket.getBucketName(), path);
             List<S3ObjectSummary> summaries = listing.getObjectSummaries();
             for(S3ObjectSummary summary : summaries) {
                 System.out.println(summary.getLastModified().toString() + " - "+ FileUtils.byteCountToDisplaySize(summary.getSize())+ " - " + summary.getKey().replaceAll("_\\$folder\\$", "/"));
             }
             System.out.println("Items found: " + summaries.size());
+            totalFileCount += summaries.size();
+
+            if(summaries.size() == 1000) {
+                System.out.println("There are more files, continue listing? (y/n)");
+                BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+                try {
+                    String continueListing = br.readLine();
+                    while(continueListing.equals("y")) {
+                        listing = s3client.listNextBatchOfObjects(listing);
+                        for(S3ObjectSummary summary : listing.getObjectSummaries()) {
+                            System.out.println(summary.getLastModified().toString() + " - "+ FileUtils.byteCountToDisplaySize(summary.getSize())+ " - " + summary.getKey().replaceAll("_\\$folder\\$", "/"));
+                        }
+                        System.out.println("Items found: " + listing.getObjectSummaries().size());
+                        totalFileCount += listing.getObjectSummaries().size();
+                        if(listing.getObjectSummaries().size() == 1000) {
+                            System.out.println("There are more files, continue listing? (y/n)");
+                            continueListing = br.readLine();
+                        }
+                    }
+
+                    System.out.println("Listed " + totalFileCount + " files");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
