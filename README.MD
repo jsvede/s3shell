@@ -33,10 +33,10 @@ You'll need to have a version of Java installed, 1.7 or higher, in order to use 
 After downloading the release of your choice, you install S3Shell by unzipping the zip file archive. 
 This will create a directory named s3shell in whatever location.
 ```
-dist/s3shell-0.5.2-dist-all.jar
-dist/s3shell.sh
-dist/s3shell.bat
-dist/log4j.xml
+s3shell/s3shell-0.5.2-dist-all.jar
+s3shell/s3shell.sh
+s3shell/s3shell.bat
+s3shell/log4j.xml
 ```
 The jar file is an all inclusive jar and includes all the required dependencies. The s3shell.sh is the script that
 starts the shell. The log4.xml helps control logging to the terminal. All 3 are required.

@@ -218,7 +218,7 @@ public class S3Shell implements ShellCommandHandler {
             totalFileCount += summaries.size();
 
             if(summaries.size() == 1000) {
-                System.out.println("There are more files, continue listing? (y/n)");
+                System.out.print("There are more files, continue listing? (y/n)");
                 BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
                 try {
                     String continueListing = br.readLine();
@@ -227,11 +227,15 @@ public class S3Shell implements ShellCommandHandler {
                         for(S3ObjectSummary summary : listing.getObjectSummaries()) {
                             System.out.println(summary.getLastModified().toString() + " - "+ FileUtils.byteCountToDisplaySize(summary.getSize())+ " - " + summary.getKey().replaceAll("_\\$folder\\$", "/"));
                         }
-                        System.out.println("Items found: " + listing.getObjectSummaries().size());
+                        if(listing.getObjectSummaries().size() > 0) {
+                            System.out.println("Items found: " + listing.getObjectSummaries().size());
+                        }
                         totalFileCount += listing.getObjectSummaries().size();
                         if(listing.getObjectSummaries().size() == 1000) {
-                            System.out.println("There are more files, continue listing? (y/n)");
+                            System.out.print("There are more files, continue listing? (y/n)");
                             continueListing = br.readLine();
+                        } else if( listing.getObjectSummaries().size() == 0) {
+                            continueListing = "n";
                         }
                     }
 
@@ -275,8 +279,19 @@ public class S3Shell implements ShellCommandHandler {
             return "no bucket selected; use changeBucket(cb)";
         }
 
-        return (selectedBucket.getBucketName() + "/" +
-                (presentWorkingDirectory == null ? "/" : presentWorkingDirectory));
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(selectedBucket.getBucketName());
+        if(presentWorkingDirectory != null) {
+            if(presentWorkingDirectory.equals("/")) {
+                sb.append(presentWorkingDirectory);
+            } else if(!presentWorkingDirectory.startsWith("/")){
+                sb.append("/").append(presentWorkingDirectory);
+            } else {
+                sb.append(presentWorkingDirectory);
+            }
+        }
+        return sb.toString();
     }
 
     @Command(description = "Show the command history for this s3shell shell",
