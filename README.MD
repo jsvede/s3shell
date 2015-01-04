@@ -49,7 +49,6 @@ S3 Shell
 s3sh>
 ```
 
-
 You are now in the s3shell!
 
 ##Using S3Shell
