@@ -13,6 +13,8 @@ then
     REMOTE_DEBUGGER="-Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=38080,suspend=y"
 fi
 
+# reduce the likelihood of someone getting access to the list of buckets
+chmod 600 ~/s3shelldb.mv.db
 
 export JAVA_OPTIONS="-Xms1024m -Xmx1024m -XX:NewSize=256m -XX:MaxNewSize=256m -XX:PermSize=256m -XX:MaxPermSize=256m"
 
