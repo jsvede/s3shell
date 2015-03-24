@@ -251,7 +251,9 @@ public class S3Shell implements ShellCommandHandler {
 
     @Command(description="A command for searching your current path for files using regex",
              abbrev = "f")
-    public void find(String regexPattern) {
+    public void find(@Param(name="regexPattern",
+                            description="The regex pattern to apply to the file names in the current path")
+                     String regexPattern) {
 
         Pattern pattern = Pattern.compile(regexPattern);
 

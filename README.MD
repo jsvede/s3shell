@@ -226,3 +226,15 @@ Params:  ()
 Description: For the bucket that the user selected, list the path that would be listed in pwd
 No parameters.
 ```
+
+### Find Files in a Directory
+```
+Command: find
+Abbrev:  f
+Params:  (regexPattern)
+Description: A command for searching your current path for files using regex
+Number of parameters: 1
+regexPattern	String	The regex pattern to apply to the file names in the current path
+```
+This command allows you to file files based on name such as prefix or suffix. It's useful when you have a path
+on a bucket with hundreds or thousands of files.
