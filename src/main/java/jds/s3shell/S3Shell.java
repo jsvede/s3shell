@@ -77,6 +77,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -244,6 +246,50 @@ public class S3Shell implements ShellCommandHandler {
                     e.printStackTrace();
                 }
             }
+        }
+    }
+
+    @Command(description="A command for searching your current path for files using regex",
+             abbrev = "f")
+    public void find(String regexPattern) {
+
+        Pattern pattern = Pattern.compile(regexPattern);
+
+        String path =null;
+
+        if(s3client != null) {
+            if(path == null || path.length() == 0) {
+                path = presentWorkingDirectory;
+            }
+            if(path != null && path.equals("/")) {
+                path = "";
+            }
+
+            long matchCount = 0;
+
+            boolean continueListingData = true;
+
+            ObjectListing listing = s3client.listObjects(selectedBucket.getBucketName(), path);
+
+            long totalFiles = listing.getObjectSummaries().size();
+
+            do {
+                listing = s3client.listNextBatchOfObjects(listing);
+                for(S3ObjectSummary summary : listing.getObjectSummaries()) {
+                    Matcher matcher = pattern.matcher(summary.getKey());
+                    while(matcher.find()) {
+                        System.out.println(summary.getLastModified().toString() + " - "+ FileUtils.byteCountToDisplaySize(summary.getSize())+ " - " + summary.getKey().replaceAll("_\\$folder\\$", "/"));
+                        matchCount++;
+                    }
+                }
+
+                totalFiles = totalFiles + listing.getObjectSummaries().size();
+
+                if(listing.getObjectSummaries().size() < 1000) {
+                    continueListingData = false;
+                }
+            }while(continueListingData);
+            System.out.println("Listed " + matchCount + " of " + totalFiles + " files");
         }
     }
 
