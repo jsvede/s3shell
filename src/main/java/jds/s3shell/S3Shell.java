@@ -39,6 +39,7 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
@@ -65,13 +66,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -178,9 +177,38 @@ public class S3Shell implements ShellCommandHandler {
         return sb.toString();
     }
 
+    @Command(description = "For the bucket that the user has selected, list base paths.",
+            abbrev="lp")
+    public void listPaths() {
+        listPaths("");
+    }
+
+    @Command(description = "For the bucket that the user has selected, list the paths based on the entry.",
+             abbrev="lp")
+    public void listPaths(@Param(name = "path",
+            description = "will use this value passed to find child paths.")final String path) {
+
+        final String pwd = presentWorkingDirectory;
+
+        if (s3client != null) {
+
+            ListObjectsRequest listObjectRequest = new ListObjectsRequest();
+
+            listObjectRequest.withBucketName(selectedBucket.getBucketName()).withPrefix(path).withDelimiter("/");
+
+            final ObjectListing listing = s3client.listObjects(listObjectRequest);
+            final List<String> prefixes = listing.getCommonPrefixes();
+            for(String prefix : prefixes) {
+                System.out.println(prefix);
+            }
+            System.out.println("found " + prefixes.size() + " prefixes");
+
+        }
+    }
+
     @Command(description = "Use the bucket alias that the user passes in.")
     public String changeBucket(@Param(name = "bucketAlias",
-                           description = "sets the current bucket to the one associated with the passed in alias.")String bucketAlias) {
+            description = "sets the current bucket to the one associated with the passed in alias.")String bucketAlias) {
 
         StringBuilder sb = new StringBuilder();
         List<Bucket> buckets = bucketRepo.findByAlias(bucketAlias);
@@ -213,39 +241,16 @@ public class S3Shell implements ShellCommandHandler {
 
             ObjectListing listing = s3client.listObjects(selectedBucket.getBucketName(), path);
             List<S3ObjectSummary> summaries = listing.getObjectSummaries();
-            for(S3ObjectSummary summary : summaries) {
-                System.out.println(summary.getLastModified().toString() + " - "+ FileUtils.byteCountToDisplaySize(summary.getSize())+ " - " + summary.getKey().replaceAll("_\\$folder\\$", "/"));
-            }
-            System.out.println("Items found: " + summaries.size());
-            totalFileCount += summaries.size();
-
-            if(summaries.size() == 1000) {
-                System.out.print("There are more files, continue listing? (y/n)");
-                BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-                try {
-                    String continueListing = br.readLine();
-                    while(continueListing.equals("y")) {
-                        listing = s3client.listNextBatchOfObjects(listing);
-                        for(S3ObjectSummary summary : listing.getObjectSummaries()) {
-                            System.out.println(summary.getLastModified().toString() + " - "+ FileUtils.byteCountToDisplaySize(summary.getSize())+ " - " + summary.getKey().replaceAll("_\\$folder\\$", "/"));
-                        }
-                        if(listing.getObjectSummaries().size() > 0) {
-                            System.out.println("Items found: " + listing.getObjectSummaries().size());
-                        }
-                        totalFileCount += listing.getObjectSummaries().size();
-                        if(listing.getObjectSummaries().size() == 1000) {
-                            System.out.print("There are more files, continue listing? (y/n)");
-                            continueListing = br.readLine();
-                        } else if( listing.getObjectSummaries().size() == 0) {
-                            continueListing = "n";
-                        }
-                    }
-
-                    System.out.println("Listed " + totalFileCount + " files");
-                } catch (IOException e) {
-                    e.printStackTrace();
+            while(summaries.size() > 0) {
+                totalFileCount = totalFileCount + summaries.size();
+                for(S3ObjectSummary summary : summaries) {
+                    System.out.println(summary.getLastModified().toString() + " - "+ FileUtils.byteCountToDisplaySize(summary.getSize())+ " - " + summary.getKey().replaceAll("_\\$folder\\$", "/"));
                 }
+                listing = s3client.listNextBatchOfObjects(listing);
+                summaries = listing.getObjectSummaries();
             }
+
+            System.out.println("Items found: " + totalFileCount);
         }
     }
 
