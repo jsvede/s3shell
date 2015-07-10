@@ -363,6 +363,21 @@ public class S3Shell implements ShellCommandHandler {
         return sb.toString();
     }
 
+
+    @Command(description = "Retrieve a file from the specified remote path and write it to the specified local path.",
+            abbrev = "get")
+    public String downloadFile(@Param(name="remotePath",
+            description="The path on the current bucket you want to retrieve")
+                               String remotePath) {
+        String localPath = System.getProperty("user.dir");
+        int index = remotePath.lastIndexOf("/");
+        String remoteShortFileName = remotePath.substring(index);
+
+        System.out.println("going to use the current working directory of: " + localPath);
+
+        return downloadFile(remotePath, localPath + remoteShortFileName);
+    }
+
     @Command(description = "Retrieve a file from the specified remote path and write it to the specified local path.",
              abbrev = "get")
     public String downloadFile(@Param(name="remotePath",
