@@ -60,6 +60,7 @@ import jds.s3shell.repository.BucketRepository;
 import jds.s3shell.repository.CommandHistoryRepository;
 import jds.s3shell.util.BucketEntryConverter;
 import jds.s3shell.util.DownloadProgress;
+import jds.s3shell.util.StringPaddingUtil;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,15 +131,61 @@ public class S3Shell implements ShellCommandHandler {
         StringBuilder sb = new StringBuilder();
         Iterable<Bucket> buckets = bucketRepo.findAll();
         Iterator<Bucket> bucketsIt = buckets.iterator();
+
+        /* This is a pretty hackish way of getting a table but it was easier than other things.
+         * Need to refactor this to be less literal and more flexible.
+         */
+        sb.append("+-").append(StringPaddingUtil.pad("-", 33, false, "-")).append("-+-")
+                .append(StringPaddingUtil.pad("-", 63, false, "-")).append("-+");
+        if(flags != null && flags.startsWith("-l")) {
+            sb.append(StringPaddingUtil.pad("-", 22, false, "-")).append("-+-")
+                    .append(StringPaddingUtil.pad("-",40, false, "-")).append("-+").append("\n");
+        } else {
+            sb.append("\n");
+        }
+
+        sb.append("| ").append(StringPaddingUtil.pad("Bucket Alias", 33, false, " ")).append(" | ")
+                .append(StringPaddingUtil.pad("Bucket Name", 63, false, " "));
+        if(flags != null && flags.startsWith("-l")) {
+            sb.append(" | ").append(StringPaddingUtil.pad("Access Key", 21, false, " ")).append(" | ")
+                    .append(StringPaddingUtil.pad("Secret Key",40, false, " ")).append(" |").append("\n");
+
+        } else {
+            sb.append(" |\n");
+        }
+
+        sb.append("+-").append(StringPaddingUtil.pad("-", 33, false, "-")).append("-+-")
+                .append(StringPaddingUtil.pad("-", 63, false, "-")).append("-+");
+
+        if(flags != null && flags.startsWith("-l")) {
+
+            sb.append(StringPaddingUtil.pad("--", 22, false, "-")).append("-+-")
+                    .append(StringPaddingUtil.pad("-",40, false, "-")).append("-+").append("\n");
+        } else {
+            sb.append("\n");
+        }
+
         while(bucketsIt.hasNext()) {
 
             Bucket b = bucketsIt.next();
-            sb.append(b.getAlias()).append(" - ").append(b.getBucketName());
+            sb.append("| ");
+            sb.append(StringPaddingUtil.pad(b.getAlias(), 33)).append(" | ").append(StringPaddingUtil.pad(b.getBucketName(), 63)).append(" | ");
             if(flags != null && flags.startsWith("-l")) {
-                sb.append(" - ").append(b.getAccessKey()).append(" - ").append(b.getSecretKey());
+                sb.append(StringPaddingUtil.pad(b.getAccessKey(), 21, true)).append(" | ")
+                        .append(StringPaddingUtil.pad(b.getSecretKey(),40, true)).append(" |");
+
             }
             sb.append("\n");
         }
+        sb.append("+-").append(StringPaddingUtil.pad("-", 33, false, "-")).append("-+-")
+                .append(StringPaddingUtil.pad("-", 63, false, "-")).append("-+");
+        if(flags != null && flags.startsWith("-l")) {
+            sb.append(StringPaddingUtil.pad("-", 22, false, "-")).append("-+-")
+                    .append(StringPaddingUtil.pad("-",40, false, "-")).append("-+");
+        } else {
+            sb.append("\n");
+        }
+
         return sb.toString();
     }
 
@@ -153,6 +200,10 @@ public class S3Shell implements ShellCommandHandler {
                           @Param(name = "secretKey",
                                   description = "The secret key for the bucket")String secretKey) {
 
+
+        if(alias != null && alias.length() > 49) {
+
+        }
         Bucket aBucket = new Bucket(alias,bucketName,accessKey,secretKey);
         bucketRepo.save(aBucket);
         System.out.println( "bucket count: " + bucketRepo.count());

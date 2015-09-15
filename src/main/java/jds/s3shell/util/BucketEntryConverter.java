@@ -7,7 +7,7 @@ import jds.s3shell.entities.Bucket;
  * Required by the jcsv library for writing an object to a csv file.
  * @author jsvede
  */
-public class BucketEntryConverter implements CSVEntryConverter<Bucket> {
+public class  BucketEntryConverter implements CSVEntryConverter<Bucket> {
     @Override
     public String[] convertEntry(Bucket bucket) {
 
