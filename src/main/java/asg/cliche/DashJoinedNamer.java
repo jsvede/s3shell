@@ -6,6 +6,8 @@
 package asg.cliche;
 
 import asg.cliche.util.Strings;
+import org.springframework.stereotype.Component;
+
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -14,6 +16,7 @@ import java.util.List;
  *
  * @author ASG
  */
+@Component
 public class DashJoinedNamer implements CommandNamer {
 
     private final boolean doRemoveCommonPrefix;

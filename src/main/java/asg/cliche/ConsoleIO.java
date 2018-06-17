@@ -6,6 +6,8 @@
 package asg.cliche;
 
 import asg.cliche.util.Strings;
+import org.springframework.stereotype.Component;
+
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -23,6 +25,7 @@ import java.util.List;
  *
  * @author ASG
  */
+@Component
 public class ConsoleIO implements Input, Output, ShellManageable {
 
     public ConsoleIO(BufferedReader in, PrintStream out, PrintStream err) {

@@ -29,7 +29,7 @@ package jds.s3shell.repository;
 
 
 import jds.s3shell.entities.Bucket;
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.List;
 
@@ -38,7 +38,7 @@ import java.util.List;
  *
  * @author jsvede
  */
-public interface BucketRepository extends CrudRepository<Bucket, Long> {
+public interface BucketRepository extends MongoRepository<Bucket, String> {
 
     public List<Bucket> findByAlias(String alias);
 }

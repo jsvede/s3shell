@@ -5,6 +5,8 @@
 
 package asg.cliche;
 
+import org.springframework.stereotype.Component;
+
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -14,6 +16,7 @@ import java.util.*;
  *
  * @author ASG
  */
+@Component
 public class CommandTable {
 
     private List<ShellCommand> commandTable = new ArrayList<ShellCommand>();

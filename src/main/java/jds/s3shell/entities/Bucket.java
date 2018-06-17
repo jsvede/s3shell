@@ -28,49 +28,36 @@
 package jds.s3shell.entities;
 
 import com.googlecode.jcsv.annotations.MapToColumn;
-
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
  * Entity class for storing the data about a bucket.
  *
  * @author jsvede
  */
-@Entity
-@Table(name = "bucket")
+@Document
 public class Bucket {
 
     @Id
-    @GeneratedValue(strategy= GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
     @MapToColumn(column=0)
-    @Column(name = "alias", nullable = false)
     private String alias;
 
     @MapToColumn(column=1)
-    @Column(name = "bucket_name", nullable = false)
     private String bucketName;
 
     @MapToColumn(column=2)
-    @Column(name = "access_key", nullable = false)
     private String accessKey;
 
     @MapToColumn(column=3)
-    @Column(name = "secret_key", nullable = false)
     private String secretKey;
 
     @MapToColumn(column=4)
-    @Column(name = "description")
     private String description;
 
     @MapToColumn(column=5)
-    @Column(name = "region")
     private String region;
 
     public Bucket() {
@@ -91,11 +78,11 @@ public class Bucket {
         this.region = region;
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

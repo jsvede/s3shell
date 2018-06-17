@@ -28,10 +28,12 @@
 package jds.s3shell.repository;
 
 import jds.s3shell.entities.CommandHistory;
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
 /**
  * @author jsvede
  */
-public interface CommandHistoryRepository extends CrudRepository<CommandHistory, Long> {
+public interface CommandHistoryRepository extends MongoRepository<CommandHistory, String> {
+
+
 }

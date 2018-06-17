@@ -53,7 +53,6 @@ import com.googlecode.jcsv.reader.internal.AnnotationEntryParser;
 import com.googlecode.jcsv.reader.internal.CSVReaderBuilder;
 import com.googlecode.jcsv.writer.CSVWriter;
 import com.googlecode.jcsv.writer.internal.CSVWriterBuilder;
-import jds.s3shell.config.AppConfig;
 import jds.s3shell.entities.Bucket;
 import jds.s3shell.entities.CommandHistory;
 import jds.s3shell.repository.BucketRepository;
@@ -64,8 +63,13 @@ import jds.s3shell.util.StringPaddingUtil;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 
 import java.io.File;
 import java.io.FileReader;
@@ -86,15 +90,24 @@ import java.util.regex.Pattern;
  *
  * @author jsvede
  */
+@ComponentScan("asg.cliche")
+@ComponentScan("jds.s3shell")
+@SpringBootApplication
 public class S3Shell implements ShellCommandHandler {
 
     private final Logger logger = LoggerFactory.getLogger(S3Shell.class);
 
-    private ApplicationContext context;
-
+    @Autowired
     private BucketRepository bucketRepo;
 
+    @Autowired
     private CommandHistoryRepository commandRepo;
+
+    @Autowired
+    private DownloadProgress downloadProgress;
+
+    @Autowired
+    private ApplicationContext context;
 
     private Bucket selectedBucket;
 
@@ -102,16 +115,38 @@ public class S3Shell implements ShellCommandHandler {
 
     private AmazonS3Client s3client = null;
 
-    private DownloadProgress downloadProgress;
+    private  static Shell shell;
 
-    private static Shell shell;
+    public S3Shell() {}
 
-    public S3Shell(ApplicationContext ctx) {
-        context = ctx;
-        bucketRepo = context.getBean(BucketRepository.class);
-        commandRepo = context.getBean(CommandHistoryRepository.class);
 
-        downloadProgress = new DownloadProgress();
+    public static void main(String[] args) throws IOException {
+
+        SpringApplication.run(S3Shell.class, args);
+    }
+
+    @Bean
+    public List<String> getList() {
+        return new ArrayList<String>();
+    }
+
+    @Bean
+    public Boolean getBoolean() {
+        return new Boolean(false);
+    }
+    @Bean
+    public DownloadProgress getDownloadProgress() {
+        return downloadProgress;
+    }
+
+    @Bean
+    public CommandLineRunner runner(){
+        return args -> {
+
+            shell = ShellFactory.createConsoleShell("s3sh", "S3 Shell", context.getBean(S3Shell.class));
+            shell.commandLoop();
+
+        };
     }
 
     @Command(description = "List all bucket information stored within this s3shell instance",
@@ -129,8 +164,8 @@ public class S3Shell implements ShellCommandHandler {
     public String listBuckets(String flags) {
 
         StringBuilder sb = new StringBuilder();
-        Iterable<Bucket> buckets = bucketRepo.findAll();
-        Iterator<Bucket> bucketsIt = buckets.iterator();
+        List<Bucket> buckets = bucketRepo.findAll();
+//        Iterator<Bucket> bucketsIt = buckets.iterator();
 
         /* This is a pretty hackish way of getting a table but it was easier than other things.
          * Need to refactor this to be less literal and more flexible.
@@ -165,9 +200,8 @@ public class S3Shell implements ShellCommandHandler {
             sb.append("\n");
         }
 
-        while(bucketsIt.hasNext()) {
+        for(Bucket b : buckets) {
 
-            Bucket b = bucketsIt.next();
             sb.append("| ");
             sb.append(StringPaddingUtil.pad(b.getAlias(), 33)).append(" | ").append(StringPaddingUtil.pad(b.getBucketName(), 63)).append(" | ");
             if(flags != null && flags.startsWith("-l")) {
@@ -625,16 +659,22 @@ public class S3Shell implements ShellCommandHandler {
      * @param cmdLine
      * @throws CLIException
      */
+
+//    @Override
+//    public void processCommand(String cmdLine) throws CLIException {
+//
+//    }
     @Override
     public void processCommand(String cmdLine) throws CLIException {
 
         if(cmdLine != null && cmdLine.startsWith("!")) {
-            String[] commandParts = cmdLine.split(" ");
-            long commandId = Long.parseLong(commandParts[1].trim());
-            CommandHistory hist = commandRepo.findOne(commandId);
-            CommandHistory newHist = new CommandHistory();
-            newHist.setCommand(hist.getCommand());
-            commandRepo.save(newHist);
+//            String[] commandParts = cmdLine.split(" ");
+//            String commandId = commandParts[1].trim();
+//            Optional<CommandHistory> hist = commandRepo.findById(commandId);
+//            CommandHistory newHist = new CommandHistory();
+//            CommandHistory history = hist.get();
+//            newHist.setCommand(history.getCommand());
+//            commandRepo.save(newHist);
             return;
         }
         CommandHistory history = new CommandHistory(cmdLine);
@@ -643,18 +683,19 @@ public class S3Shell implements ShellCommandHandler {
     }
 
 
-    @Command(abbrev="!",
-             description = "The command to re-execute a given command in history")
-    public void bang(@Param(name = "commandHistory",
-                            description = "The command number to re-excute.") Integer commandNumber) {
-
-        CommandHistory history = commandRepo.findOne(commandNumber.longValue());
-        try {
-            shell.processLine(history.getCommand());
-        } catch (CLIException e) {
-            e.printStackTrace();
-        }
-    }
+//    @Command(abbrev="!",
+//             description = "The command to re-execute a given command in history")
+//    public void bang(@Param(name = "commandHistory",
+//                            description = "The command number to re-excute.") Integer commandNumber) {
+//
+//        Optional<CommandHistory> hist = commandRepo.findById(commandNumber.longValue());
+//        CommandHistory history = hist.get();
+//        try {
+//            shell.processLine(history.getCommand());
+//        } catch (CLIException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     public void cliEnterLoop() {
 
@@ -664,11 +705,4 @@ public class S3Shell implements ShellCommandHandler {
 
     }
 
-    public static void main(String[] args) throws IOException {
-
-        ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
-
-        shell = ShellFactory.createConsoleShell("s3sh", "S3 Shell", new S3Shell(context));
-        shell.commandLoop();
-    }
 }

@@ -27,27 +27,20 @@
  */
 package jds.s3shell.entities;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
  * A JPA style entity for persisting command history.
  *
  * @author jsvede
  */
-@Entity
-@Table(name = "history")
+@Document
 public class CommandHistory {
 
     @Id
-    @GeneratedValue(strategy= GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @Column(name = "command", nullable = false)
     private String command;
 
     public CommandHistory() {}
@@ -56,11 +49,11 @@ public class CommandHistory {
         this.command = command;
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

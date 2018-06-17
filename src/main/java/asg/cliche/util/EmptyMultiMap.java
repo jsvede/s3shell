@@ -5,6 +5,8 @@
 
 package asg.cliche.util;
 
+import org.springframework.stereotype.Component;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -14,6 +16,7 @@ import java.util.Set;
  *
  * @author ASG
  */
+@Component
 public class EmptyMultiMap<K, V> implements MultiMap<K, V> {
 
     public void put(K key, V value) {

@@ -15,6 +15,8 @@ package asg.cliche;
 import asg.cliche.asg.cliche.ext.ShellCommandHandler;
 import asg.cliche.util.ArrayHashMultiMap;
 import asg.cliche.util.MultiMap;
+import org.springframework.stereotype.Component;
+
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -28,6 +30,7 @@ import java.util.List;
  *
  * @author ASG
  */
+@Component
 public class Shell {
 
     public static String PROJECT_HOMEPAGE_URL = "http://cliche.sourceforge.net";
@@ -36,13 +39,14 @@ public class Shell {
     private Input input;
     private String appName;
 
+    @Component
     public static class Settings {
         private final Input input;
         private final Output output;
         private final MultiMap<String, Object> auxHandlers;
         private final boolean displayTime;
 
-        public Settings(Input input, Output output, MultiMap auxHandlers, boolean displayTime) {
+        public Settings(Input input, Output output, MultiMap auxHandlers, Boolean displayTime) {
             this.input = input;
             this.output = output;
             this.auxHandlers = auxHandlers;

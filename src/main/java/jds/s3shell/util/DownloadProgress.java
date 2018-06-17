@@ -28,6 +28,7 @@
 package jds.s3shell.util;
 
 import org.apache.commons.io.FileUtils;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -39,6 +40,7 @@ import java.io.PrintStream;
  *
  * @author jsvede
  */
+@Component
 public class DownloadProgress {
 
     public DownloadProgress() {}
