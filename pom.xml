@@ -6,7 +6,7 @@
 
     <groupId>jds.s3shell</groupId>
     <artifactId>s3shell</artifactId>
-    <version>0.7-SNAPSHOT</version>
+    <version>0.8-SNAPSHOT</version>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -28,7 +28,7 @@
         <commons.pool.version>1.5.4</commons.pool.version>
         <commons.io.version>2.4</commons.io.version>
 
-        <google-gson.version>2.3</google-gson.version>
+        <google.gson.version>2.8.5</google.gson.version>
 
         <amazon.sdk.version>1.11.349</amazon.sdk.version>
 
@@ -88,6 +88,13 @@
             <artifactId>jcsv</artifactId>
             <version>${jcsv.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>${google.gson.version}</version>
+        </dependency>
+
     </dependencies>
 
     <build>

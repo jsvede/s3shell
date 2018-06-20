@@ -45,6 +45,8 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.googlecode.jcsv.CSVStrategy;
 import com.googlecode.jcsv.annotations.internal.ValueProcessorProvider;
 import com.googlecode.jcsv.reader.CSVEntryParser;
@@ -55,7 +57,6 @@ import com.googlecode.jcsv.writer.CSVWriter;
 import com.googlecode.jcsv.writer.internal.CSVWriterBuilder;
 import jds.s3shell.entities.Bucket;
 import jds.s3shell.entities.CommandHistory;
-import jds.s3shell.repository.BucketRepository;
 import jds.s3shell.repository.CommandHistoryRepository;
 import jds.s3shell.util.BucketEntryConverter;
 import jds.s3shell.util.DownloadProgress;
@@ -77,9 +78,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -97,8 +101,8 @@ public class S3Shell implements ShellCommandHandler {
 
     private final Logger logger = LoggerFactory.getLogger(S3Shell.class);
 
-    @Autowired
-    private BucketRepository bucketRepo;
+    private final static String BUCKET_STORAGE_FILE_NAME = "buckets.s3sh";
+
 
     @Autowired
     private CommandHistoryRepository commandRepo;
@@ -109,6 +113,9 @@ public class S3Shell implements ShellCommandHandler {
     @Autowired
     private ApplicationContext context;
 
+    @Autowired
+    private Gson gson;
+
     private Bucket selectedBucket;
 
     private String presentWorkingDirectory;
@@ -117,8 +124,50 @@ public class S3Shell implements ShellCommandHandler {
 
     private  static Shell shell;
 
-    public S3Shell() {}
+    private Map<String, Bucket> buckets = new HashMap<>();
+    private Map<Long, String> commandHistory = new HashMap<>();
 
+    private String s3HomeDirectory;
+
+
+    public S3Shell() {
+        String userHomeDir = System.getProperty("user.home");
+        s3HomeDirectory = userHomeDir + File.separator + ".s3shell";
+
+        final File s3ShellDir = new File(s3HomeDirectory);
+
+        if(!s3ShellDir.exists()) {
+            s3ShellDir.mkdir();
+        }
+
+        final File bucketFile = new File(s3ShellDir.getPath() + File.separator + BUCKET_STORAGE_FILE_NAME);
+
+        if(bucketFile.exists()) {
+           //loadBucketFile();
+        }
+
+
+    }
+
+    private void loadBucketFile() {
+
+        try {
+            FileReader reader = new FileReader(s3HomeDirectory + File.separator + BUCKET_STORAGE_FILE_NAME);
+
+            Type listType = new TypeToken<List<Bucket>>() {}.getType();
+            String json = gson.fromJson(reader, listType);
+            List<Bucket> listOfBuckets = gson.fromJson(json, listType);
+
+            for(Bucket b: listOfBuckets) {
+                buckets.put(b.getAlias(), b);
+            }
+        } catch(IOException ioe) {
+            logger.error(ioe.getMessage(), ioe);
+        }
+
+
+
+    }
 
     public static void main(String[] args) throws IOException {
 
@@ -137,6 +186,11 @@ public class S3Shell implements ShellCommandHandler {
     @Bean
     public DownloadProgress getDownloadProgress() {
         return downloadProgress;
+    }
+
+    @Bean
+    public Gson getGson() {
+        return new Gson();
     }
 
     @Bean
@@ -164,7 +218,7 @@ public class S3Shell implements ShellCommandHandler {
     public String listBuckets(String flags) {
 
         StringBuilder sb = new StringBuilder();
-        List<Bucket> buckets = bucketRepo.findAll();
+        //List<Bucket> buckets = bucketRepo.findAll();
 //        Iterator<Bucket> bucketsIt = buckets.iterator();
 
         /* This is a pretty hackish way of getting a table but it was easier than other things.
@@ -200,7 +254,7 @@ public class S3Shell implements ShellCommandHandler {
             sb.append("\n");
         }
 
-        for(Bucket b : buckets) {
+        for(Bucket b : buckets.values()) {
 
             sb.append("| ");
             sb.append(StringPaddingUtil.pad(b.getAlias(), 33)).append(" | ").append(StringPaddingUtil.pad(b.getBucketName(), 63)).append(" | ");
@@ -239,12 +293,41 @@ public class S3Shell implements ShellCommandHandler {
 
         }
         Bucket aBucket = new Bucket(alias,bucketName,accessKey,secretKey);
-        bucketRepo.save(aBucket);
-        System.out.println( "bucket count: " + bucketRepo.count());
+        if(!buckets.containsKey(aBucket.getAlias())) {
+            buckets.put(aBucket.getAlias(), aBucket);
+        }
+        saveBucketsToFile(new ArrayList<Bucket>(buckets.values()));
+        System.out.println( "bucket count: " + buckets.size());
 
         return "Added bucket " + bucketName + " with an alias of " + alias;
 
 
+    }
+
+    private void saveBucketsToFile(List<Bucket> buckets) {
+
+        try {
+            FileWriter writer = new FileWriter(s3HomeDirectory + File.separator + BUCKET_STORAGE_FILE_NAME);
+            Type listType = new TypeToken<List<Bucket>>() {}.getType();
+            gson.toJson(buckets, listType, writer);
+            writer.flush();
+            writer.close();
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    private void saveBucketToFile(Bucket bucket) {
+
+
+        try {
+            FileWriter writer = new FileWriter(s3HomeDirectory + File.separator + BUCKET_STORAGE_FILE_NAME, true);
+            gson.toJson(bucket, writer);
+            writer.flush();
+            writer.close();
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
     @Command(description = "Removes a bucket from the list of buckets in Blister",
@@ -253,11 +336,11 @@ public class S3Shell implements ShellCommandHandler {
                                       description = "The alias by which the bucket is referenced")String bucketAlias) {
 
         StringBuilder sb = new StringBuilder();
-        List<Bucket> buckets = bucketRepo.findByAlias(bucketAlias);
-        sb.append("Found " + buckets.size() + " for removal").append("\n");
-        for(Bucket deleteMe : buckets) {
-            bucketRepo.delete(deleteMe);
-            sb.append(deleteMe.getAlias() + " has been deleted").append("\n");
+        if(buckets.containsKey(bucketAlias)) {
+            buckets.remove(bucketAlias);
+            sb.append("bucket named " + bucketAlias + " has been deleted");
+        } else {
+            sb.append("no bucket named " + bucketAlias + " found");
         }
         return sb.toString();
     }
@@ -296,9 +379,10 @@ public class S3Shell implements ShellCommandHandler {
             description = "sets the current bucket to the one associated with the passed in alias.")String bucketAlias) {
 
         StringBuilder sb = new StringBuilder();
-        List<Bucket> buckets = bucketRepo.findByAlias(bucketAlias);
-        if(buckets.size() > 0) {
-            selectedBucket = buckets.get(0);
+//        List<Bucket> buckets = buckets.get//bucketRepo.findByAlias(bucketAlias);
+
+        selectedBucket = buckets.get(bucketAlias);
+        if(selectedBucket != null) {
             AWSCredentials awsCredentials = new BasicAWSCredentials(selectedBucket.getAccessKey(), selectedBucket.getSecretKey());
             s3client = new AmazonS3Client(awsCredentials, new ClientConfiguration());
             presentWorkingDirectory = "/";
@@ -563,8 +647,13 @@ public class S3Shell implements ShellCommandHandler {
             CSVReader<Bucket> bucketsFromCsv = new CSVReaderBuilder<Bucket>(reader).strategy(CSVStrategy.UK_DEFAULT).entryParser(entryParser).build();
             List<Bucket> bucketsList = bucketsFromCsv.readAll();
             for(Bucket b : bucketsList) {
-                bucketRepo.save(b);
+                if(!buckets.containsKey(b.getAlias())) {
+                    buckets.put(b.getAlias(), b);
+//                    saveBucketToFile(b);
+                }
+                //bucketRepo.save(b);
             }
+            saveBucketsToFile(bucketsList);
         } catch (IOException e) {
             logger.error(e.getMessage(),e);
             return "Unable to process the bucket information in " + fileName + " due to " + e.getMessage();
@@ -596,16 +685,16 @@ public class S3Shell implements ShellCommandHandler {
         List<Bucket>bucketsForExport = new ArrayList<Bucket>();
 
         if(bucketNames == null) {
-            Iterable<Bucket> buckets = bucketRepo.findAll();
-            for(Bucket b : buckets) {
+//            Iterable<Bucket> buckets = bucketRepo.findAll();
+            for(Bucket b : buckets.values()) {
                 bucketsForExport.add(b);
             }
         } else {
             String[] specifiedBuckets = bucketNames.split(",");
             for(String bucketName : specifiedBuckets) {
-                List<Bucket> foundBucket = bucketRepo.findByAlias(bucketName);
-                if(foundBucket != null && foundBucket.size() > 0) {
-                    bucketsForExport.addAll(foundBucket);
+                Bucket foundBucket = buckets.get(bucketName);
+                if(foundBucket != null ) {
+                    bucketsForExport.add(foundBucket);
                 }
             }
         }
