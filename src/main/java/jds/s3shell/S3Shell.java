@@ -46,6 +46,7 @@ import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.googlecode.jcsv.CSVStrategy;
 import com.googlecode.jcsv.annotations.internal.ValueProcessorProvider;
@@ -143,7 +144,7 @@ public class S3Shell implements ShellCommandHandler {
         final File bucketFile = new File(s3ShellDir.getPath() + File.separator + BUCKET_STORAGE_FILE_NAME);
 
         if(bucketFile.exists()) {
-           //loadBucketFile();
+           loadBucketFile();
         }
 
 
@@ -154,19 +155,21 @@ public class S3Shell implements ShellCommandHandler {
         try {
             FileReader reader = new FileReader(s3HomeDirectory + File.separator + BUCKET_STORAGE_FILE_NAME);
 
-            Type listType = new TypeToken<List<Bucket>>() {}.getType();
-            String json = gson.fromJson(reader, listType);
-            List<Bucket> listOfBuckets = gson.fromJson(json, listType);
+            GsonBuilder builder = new GsonBuilder();
 
-            for(Bucket b: listOfBuckets) {
+            // create local builder because the member variable isn't initialized at this time.
+            Gson myGson = builder.create();
+
+            Bucket[] bucketsFromFile = myGson.fromJson(reader, Bucket[].class);
+
+            for(Bucket b: bucketsFromFile) {
                 buckets.put(b.getAlias(), b);
             }
+
+            reader.close();
         } catch(IOException ioe) {
             logger.error(ioe.getMessage(), ioe);
         }
-
-
-
     }
 
     public static void main(String[] args) throws IOException {

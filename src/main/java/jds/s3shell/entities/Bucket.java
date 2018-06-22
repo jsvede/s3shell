@@ -70,6 +70,14 @@ public class Bucket {
         this.secretKey = secretKey;
     }
 
+    public Bucket(String alias, String bucketName, String accessKey, String secretKey, String description, String region) {
+        this.alias = alias;
+        this.bucketName = bucketName;
+        this.accessKey = accessKey;
+        this.secretKey = secretKey;
+        this.description = description;
+        this.region = region;
+    }
     public String getRegion() {
         return region;
     }
