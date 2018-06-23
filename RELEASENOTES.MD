@@ -1,5 +1,13 @@
 #Release Notes By Version
 
+## 0.8.0
+Removed support for MongoDB and CSVs and instead converted to storing buckets and histories in files in user home directory.
+
+## 0.7.0
+Added support for MongoDB storage of buckets and history.
+
+Converted to Spring Boot 2.0.
+
 ## 0.6.0
 Fixed https://github.com/jsvede/s3shell/issues/3 - paging large listing from the ls command.
 Added ! bang command to re-run history.

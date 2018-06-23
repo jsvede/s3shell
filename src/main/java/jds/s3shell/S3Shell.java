@@ -175,8 +175,11 @@ public class S3Shell implements ShellCommandHandler {
 
             String[] commandsFromFile = myGson.fromJson(reader, String[].class);
 
-            for(String command: commandsFromFile) {
-                commandHistory.add(command);
+            if(commandsFromFile != null && commandsFromFile.length > 0) {
+
+                for(String command: commandsFromFile) {
+                    commandHistory.add(command);
+                }
             }
 
             reader.close();
@@ -213,7 +216,7 @@ public class S3Shell implements ShellCommandHandler {
     public CommandLineRunner runner(){
         return args -> {
 
-            shell = ShellFactory.createConsoleShell("s3sh", "S3 Shell", context.getBean(S3Shell.class));
+            shell = ShellFactory.createConsoleShell("s3sh", "S3 Shell - v" + version(), context.getBean(S3Shell.class));
             shell.commandLoop();
 
         };
