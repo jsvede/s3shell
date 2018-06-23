@@ -48,18 +48,7 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import com.googlecode.jcsv.CSVStrategy;
-import com.googlecode.jcsv.annotations.internal.ValueProcessorProvider;
-import com.googlecode.jcsv.reader.CSVEntryParser;
-import com.googlecode.jcsv.reader.CSVReader;
-import com.googlecode.jcsv.reader.internal.AnnotationEntryParser;
-import com.googlecode.jcsv.reader.internal.CSVReaderBuilder;
-import com.googlecode.jcsv.writer.CSVWriter;
-import com.googlecode.jcsv.writer.internal.CSVWriterBuilder;
 import jds.s3shell.entities.Bucket;
-import jds.s3shell.entities.CommandHistory;
-import jds.s3shell.repository.CommandHistoryRepository;
-import jds.s3shell.util.BucketEntryConverter;
 import jds.s3shell.util.DownloadProgress;
 import jds.s3shell.util.StringPaddingUtil;
 import org.apache.commons.io.FileUtils;
@@ -82,7 +71,6 @@ import java.io.Reader;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -103,10 +91,8 @@ public class S3Shell implements ShellCommandHandler {
     private final Logger logger = LoggerFactory.getLogger(S3Shell.class);
 
     private final static String BUCKET_STORAGE_FILE_NAME = "buckets.s3sh";
+    private final static String COMMAND_STORAGE_FILE_NAME = "commands.s3sh";
 
-
-    @Autowired
-    private CommandHistoryRepository commandRepo;
 
     @Autowired
     private DownloadProgress downloadProgress;
@@ -126,7 +112,7 @@ public class S3Shell implements ShellCommandHandler {
     private  static Shell shell;
 
     private Map<String, Bucket> buckets = new HashMap<>();
-    private Map<Long, String> commandHistory = new HashMap<>();
+    private List<String> commandHistory = new ArrayList<>();
 
     private String s3HomeDirectory;
 
@@ -147,6 +133,11 @@ public class S3Shell implements ShellCommandHandler {
            loadBucketFile();
         }
 
+        final File historyFile = new File(s3ShellDir.getPath() + File.separator + COMMAND_STORAGE_FILE_NAME);
+
+        if(historyFile.exists()) {
+            loadHistoryFile();
+        }
 
     }
 
@@ -164,6 +155,28 @@ public class S3Shell implements ShellCommandHandler {
 
             for(Bucket b: bucketsFromFile) {
                 buckets.put(b.getAlias(), b);
+            }
+
+            reader.close();
+        } catch(IOException ioe) {
+            logger.error(ioe.getMessage(), ioe);
+        }
+    }
+
+    private void loadHistoryFile() {
+
+        try {
+            FileReader reader = new FileReader(s3HomeDirectory + File.separator + COMMAND_STORAGE_FILE_NAME);
+
+            GsonBuilder builder = new GsonBuilder();
+
+            // create local builder because the member variable isn't initialized at this time.
+            Gson myGson = builder.create();
+
+            String[] commandsFromFile = myGson.fromJson(reader, String[].class);
+
+            for(String command: commandsFromFile) {
+                commandHistory.add(command);
             }
 
             reader.close();
@@ -299,7 +312,7 @@ public class S3Shell implements ShellCommandHandler {
         if(!buckets.containsKey(aBucket.getAlias())) {
             buckets.put(aBucket.getAlias(), aBucket);
         }
-        saveBucketsToFile(new ArrayList<Bucket>(buckets.values()));
+        saveBucketsToFile(new ArrayList<Bucket>(buckets.values()), null);
         System.out.println( "bucket count: " + buckets.size());
 
         return "Added bucket " + bucketName + " with an alias of " + alias;
@@ -307,10 +320,16 @@ public class S3Shell implements ShellCommandHandler {
 
     }
 
-    private void saveBucketsToFile(List<Bucket> buckets) {
+    private void saveBucketsToFile(List<Bucket> buckets, String fileName) {
 
         try {
-            FileWriter writer = new FileWriter(s3HomeDirectory + File.separator + BUCKET_STORAGE_FILE_NAME);
+            FileWriter writer;
+
+            if (fileName != null && fileName.length() > 0) {
+                writer = new FileWriter(fileName);
+            } else {
+                writer = new FileWriter(s3HomeDirectory + File.separator + BUCKET_STORAGE_FILE_NAME);
+            }
             Type listType = new TypeToken<List<Bucket>>() {}.getType();
             gson.toJson(buckets, listType, writer);
             writer.flush();
@@ -320,18 +339,19 @@ public class S3Shell implements ShellCommandHandler {
         }
     }
 
-    private void saveBucketToFile(Bucket bucket) {
-
+    private void saveCommandsToFile(List<String> commands) {
 
         try {
-            FileWriter writer = new FileWriter(s3HomeDirectory + File.separator + BUCKET_STORAGE_FILE_NAME, true);
-            gson.toJson(bucket, writer);
+            FileWriter writer = new FileWriter(s3HomeDirectory + File.separator + COMMAND_STORAGE_FILE_NAME);
+            Type listType = new TypeToken<List<String>>() {}.getType();
+            gson.toJson(commands, listType, writer);
             writer.flush();
             writer.close();
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
         }
     }
+
 
     @Command(description = "Removes a bucket from the list of buckets in Blister",
              abbrev="rmb")
@@ -523,14 +543,12 @@ public class S3Shell implements ShellCommandHandler {
              abbrev="hist")
     public String history() {
 
+        int count = 1;
+
         StringBuilder sb = new StringBuilder();
-        Iterable<CommandHistory> history = commandRepo.findAll();
-        Iterator<CommandHistory> historyIt = history.iterator();
-        long historyCount = 1;
-        while(historyIt.hasNext()) {
-            CommandHistory his = historyIt.next();
-            sb.append(his.getId()).append("  ").append(his.getCommand()).append("\n");
-            historyCount++;
+        for(String command : commandHistory) {
+            sb.append(count).append("  ").append(command).append("\n");
+            count++;
         }
         return sb.toString();
     }
@@ -645,18 +663,24 @@ public class S3Shell implements ShellCommandHandler {
         }
         try {
             Reader reader = new FileReader(inputFile);
-            ValueProcessorProvider provider = new ValueProcessorProvider();
-            CSVEntryParser<Bucket> entryParser = new AnnotationEntryParser<Bucket>(Bucket.class, provider);
-            CSVReader<Bucket> bucketsFromCsv = new CSVReaderBuilder<Bucket>(reader).strategy(CSVStrategy.UK_DEFAULT).entryParser(entryParser).build();
-            List<Bucket> bucketsList = bucketsFromCsv.readAll();
-            for(Bucket b : bucketsList) {
-                if(!buckets.containsKey(b.getAlias())) {
+
+            try {
+
+                GsonBuilder builder = new GsonBuilder();
+
+                // create local builder because the member variable isn't initialized at this time.
+                Gson myGson = builder.create();
+
+                Bucket[] bucketsFromFile = myGson.fromJson(reader, Bucket[].class);
+
+                for(Bucket b: bucketsFromFile) {
                     buckets.put(b.getAlias(), b);
-//                    saveBucketToFile(b);
                 }
-                //bucketRepo.save(b);
+
+                reader.close();
+            } catch(IOException ioe) {
+                logger.error(ioe.getMessage(), ioe);
             }
-            saveBucketsToFile(bucketsList);
         } catch (IOException e) {
             logger.error(e.getMessage(),e);
             return "Unable to process the bucket information in " + fileName + " due to " + e.getMessage();
@@ -710,19 +734,8 @@ public class S3Shell implements ShellCommandHandler {
                     return "unable to create missing parent directories for " + fileName;
                 }
             }
-            try {
-                FileWriter bucketCsvWriter = new FileWriter(bucketCsvFile);
-                CSVWriter<Bucket> csvWriter =
-                       new CSVWriterBuilder<Bucket>(bucketCsvWriter).entryConverter(new BucketEntryConverter()).strategy(CSVStrategy.UK_DEFAULT).build();
-
-                csvWriter.writeAll(bucketsForExport);
-                csvWriter.flush();
-                csvWriter.close();
-                return "wrote " + bucketsForExport.size() + " to file named " + fileName ;
-            } catch (IOException e) {
-                logger.error(e.getMessage(),e);
-                return "failed to write to " + fileName;
-            }
+            saveBucketsToFile(bucketsForExport, bucketCsvFile.getPath());
+            return "wrote " + bucketsForExport.size() + " to file named " + fileName ;
         } else {
             return "fileName parameter cannot be null";
         }
@@ -760,34 +773,32 @@ public class S3Shell implements ShellCommandHandler {
     public void processCommand(String cmdLine) throws CLIException {
 
         if(cmdLine != null && cmdLine.startsWith("!")) {
-//            String[] commandParts = cmdLine.split(" ");
-//            String commandId = commandParts[1].trim();
-//            Optional<CommandHistory> hist = commandRepo.findById(commandId);
-//            CommandHistory newHist = new CommandHistory();
-//            CommandHistory history = hist.get();
-//            newHist.setCommand(history.getCommand());
-//            commandRepo.save(newHist);
+            String[] commandParts = cmdLine.split(" ");
+            String commandValue = commandParts[1].trim();
+            commandHistory.add(commandValue);
             return;
         }
-        CommandHistory history = new CommandHistory(cmdLine);
-        commandRepo.save(history);
+        commandHistory.add(cmdLine);
+
+
+        saveCommandsToFile(commandHistory);
 
     }
 
 
-//    @Command(abbrev="!",
-//             description = "The command to re-execute a given command in history")
-//    public void bang(@Param(name = "commandHistory",
-//                            description = "The command number to re-excute.") Integer commandNumber) {
-//
-//        Optional<CommandHistory> hist = commandRepo.findById(commandNumber.longValue());
-//        CommandHistory history = hist.get();
-//        try {
-//            shell.processLine(history.getCommand());
-//        } catch (CLIException e) {
-//            e.printStackTrace();
-//        }
-//    }
+    @Command(abbrev="!",
+             description = "The command to re-execute a given command in history")
+    public void bang(@Param(name = "commandHistory",
+                            description = "The command number to re-excute.") Integer commandNumber) {
+
+        String command = commandHistory.get(commandNumber-1);
+
+        try {
+            shell.processLine(command);
+        } catch (CLIException e) {
+            e.printStackTrace();
+        }
+    }
 
     public void cliEnterLoop() {
 

@@ -27,37 +27,24 @@
  */
 package jds.s3shell.entities;
 
-import com.googlecode.jcsv.annotations.MapToColumn;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-
 /**
  * Entity class for storing the data about a bucket.
  *
  * @author jsvede
  */
-@Document
 public class Bucket {
 
-    @Id
-    private String id;
 
-    @MapToColumn(column=0)
     private String alias;
 
-    @MapToColumn(column=1)
     private String bucketName;
 
-    @MapToColumn(column=2)
     private String accessKey;
 
-    @MapToColumn(column=3)
     private String secretKey;
 
-    @MapToColumn(column=4)
     private String description;
 
-    @MapToColumn(column=5)
     private String region;
 
     public Bucket() {
@@ -84,14 +71,6 @@ public class Bucket {
 
     public void setRegion(String region) {
         this.region = region;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
     }
 
     public String getDescription() {
