@@ -5,6 +5,8 @@
 
 package asg.cliche.util;
 
+import org.springframework.stereotype.Component;
+
 import java.util.Collection;
 import java.util.Set;
 
@@ -13,6 +15,7 @@ import java.util.Set;
  * MultiMap is a map which can contain multiple values under the same key.
  * @author ASG
  */
+@Component
 public interface MultiMap<K, V> {
 
     void put(K key, V value);

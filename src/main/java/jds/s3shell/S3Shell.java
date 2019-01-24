@@ -45,26 +45,22 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.googlecode.jcsv.CSVStrategy;
-import com.googlecode.jcsv.annotations.internal.ValueProcessorProvider;
-import com.googlecode.jcsv.reader.CSVEntryParser;
-import com.googlecode.jcsv.reader.CSVReader;
-import com.googlecode.jcsv.reader.internal.AnnotationEntryParser;
-import com.googlecode.jcsv.reader.internal.CSVReaderBuilder;
-import com.googlecode.jcsv.writer.CSVWriter;
-import com.googlecode.jcsv.writer.internal.CSVWriterBuilder;
-import jds.s3shell.config.AppConfig;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import jds.s3shell.entities.Bucket;
-import jds.s3shell.entities.CommandHistory;
-import jds.s3shell.repository.BucketRepository;
-import jds.s3shell.repository.CommandHistoryRepository;
-import jds.s3shell.util.BucketEntryConverter;
 import jds.s3shell.util.DownloadProgress;
+import jds.s3shell.util.StringPaddingUtil;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 
 import java.io.File;
 import java.io.FileReader;
@@ -72,9 +68,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -85,15 +83,25 @@ import java.util.regex.Pattern;
  *
  * @author jsvede
  */
+@ComponentScan("asg.cliche")
+@ComponentScan("jds.s3shell")
+@SpringBootApplication
 public class S3Shell implements ShellCommandHandler {
 
     private final Logger logger = LoggerFactory.getLogger(S3Shell.class);
 
+    private final static String BUCKET_STORAGE_FILE_NAME = "buckets.s3sh";
+    private final static String COMMAND_STORAGE_FILE_NAME = "commands.s3sh";
+
+
+    @Autowired
+    private DownloadProgress downloadProgress;
+
+    @Autowired
     private ApplicationContext context;
 
-    private BucketRepository bucketRepo;
-
-    private CommandHistoryRepository commandRepo;
+    @Autowired
+    private Gson gson;
 
     private Bucket selectedBucket;
 
@@ -101,16 +109,117 @@ public class S3Shell implements ShellCommandHandler {
 
     private AmazonS3Client s3client = null;
 
-    private DownloadProgress downloadProgress;
+    private  static Shell shell;
 
-    private static Shell shell;
+    private Map<String, Bucket> buckets = new HashMap<>();
+    private List<String> commandHistory = new ArrayList<>();
 
-    public S3Shell(ApplicationContext ctx) {
-        context = ctx;
-        bucketRepo = context.getBean(BucketRepository.class);
-        commandRepo = context.getBean(CommandHistoryRepository.class);
+    private String s3HomeDirectory;
 
-        downloadProgress = new DownloadProgress();
+
+    public S3Shell() {
+        String userHomeDir = System.getProperty("user.home");
+        s3HomeDirectory = userHomeDir + File.separator + ".s3shell";
+
+        final File s3ShellDir = new File(s3HomeDirectory);
+
+        if(!s3ShellDir.exists()) {
+            s3ShellDir.mkdir();
+        }
+
+        final File bucketFile = new File(s3ShellDir.getPath() + File.separator + BUCKET_STORAGE_FILE_NAME);
+
+        if(bucketFile.exists()) {
+           loadBucketFile();
+        }
+
+        final File historyFile = new File(s3ShellDir.getPath() + File.separator + COMMAND_STORAGE_FILE_NAME);
+
+        if(historyFile.exists()) {
+            loadHistoryFile();
+        }
+
+    }
+
+    private void loadBucketFile() {
+
+        try {
+            FileReader reader = new FileReader(s3HomeDirectory + File.separator + BUCKET_STORAGE_FILE_NAME);
+
+            GsonBuilder builder = new GsonBuilder();
+
+            // create local builder because the member variable isn't initialized at this time.
+            Gson myGson = builder.create();
+
+            Bucket[] bucketsFromFile = myGson.fromJson(reader, Bucket[].class);
+
+            for(Bucket b: bucketsFromFile) {
+                buckets.put(b.getAlias(), b);
+            }
+
+            reader.close();
+        } catch(IOException ioe) {
+            logger.error(ioe.getMessage(), ioe);
+        }
+    }
+
+    private void loadHistoryFile() {
+
+        try {
+            FileReader reader = new FileReader(s3HomeDirectory + File.separator + COMMAND_STORAGE_FILE_NAME);
+
+            GsonBuilder builder = new GsonBuilder();
+
+            // create local builder because the member variable isn't initialized at this time.
+            Gson myGson = builder.create();
+
+            String[] commandsFromFile = myGson.fromJson(reader, String[].class);
+
+            if(commandsFromFile != null && commandsFromFile.length > 0) {
+
+                for(String command: commandsFromFile) {
+                    commandHistory.add(command);
+                }
+            }
+
+            reader.close();
+        } catch(IOException ioe) {
+            logger.error(ioe.getMessage(), ioe);
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+
+        SpringApplication.run(S3Shell.class, args);
+    }
+
+    @Bean
+    public List<String> getList() {
+        return new ArrayList<String>();
+    }
+
+    @Bean
+    public Boolean getBoolean() {
+        return new Boolean(false);
+    }
+    @Bean
+    public DownloadProgress getDownloadProgress() {
+        return downloadProgress;
+    }
+
+    @Bean
+    public Gson getGson() {
+        return new Gson();
+    }
+
+    @Bean
+    public CommandLineRunner runner(){
+        return args -> {
+
+            shell = ShellFactory.createConsoleShell("s3sh", "S3 Shell - v" + version(), context.getBean(S3Shell.class));
+            shell.commandLoop();
+
+        };
     }
 
     @Command(description = "List all bucket information stored within this s3shell instance",
@@ -128,17 +237,62 @@ public class S3Shell implements ShellCommandHandler {
     public String listBuckets(String flags) {
 
         StringBuilder sb = new StringBuilder();
-        Iterable<Bucket> buckets = bucketRepo.findAll();
-        Iterator<Bucket> bucketsIt = buckets.iterator();
-        while(bucketsIt.hasNext()) {
+        //List<Bucket> buckets = bucketRepo.findAll();
+//        Iterator<Bucket> bucketsIt = buckets.iterator();
 
-            Bucket b = bucketsIt.next();
-            sb.append(b.getAlias()).append(" - ").append(b.getBucketName());
+        /* This is a pretty hackish way of getting a table but it was easier than other things.
+         * Need to refactor this to be less literal and more flexible.
+         */
+        sb.append("+-").append(StringPaddingUtil.pad("-", 33, false, "-")).append("-+-")
+                .append(StringPaddingUtil.pad("-", 63, false, "-")).append("-+");
+        if(flags != null && flags.startsWith("-l")) {
+            sb.append(StringPaddingUtil.pad("-", 22, false, "-")).append("-+-")
+                    .append(StringPaddingUtil.pad("-",40, false, "-")).append("-+").append("\n");
+        } else {
+            sb.append("\n");
+        }
+
+        sb.append("| ").append(StringPaddingUtil.pad("Bucket Alias", 33, false, " ")).append(" | ")
+                .append(StringPaddingUtil.pad("Bucket Name", 63, false, " "));
+        if(flags != null && flags.startsWith("-l")) {
+            sb.append(" | ").append(StringPaddingUtil.pad("Access Key", 21, false, " ")).append(" | ")
+                    .append(StringPaddingUtil.pad("Secret Key",40, false, " ")).append(" |").append("\n");
+
+        } else {
+            sb.append(" |\n");
+        }
+
+        sb.append("+-").append(StringPaddingUtil.pad("-", 33, false, "-")).append("-+-")
+                .append(StringPaddingUtil.pad("-", 63, false, "-")).append("-+");
+
+        if(flags != null && flags.startsWith("-l")) {
+
+            sb.append(StringPaddingUtil.pad("--", 22, false, "-")).append("-+-")
+                    .append(StringPaddingUtil.pad("-",40, false, "-")).append("-+").append("\n");
+        } else {
+            sb.append("\n");
+        }
+
+        for(Bucket b : buckets.values()) {
+
+            sb.append("| ");
+            sb.append(StringPaddingUtil.pad(b.getAlias(), 33)).append(" | ").append(StringPaddingUtil.pad(b.getBucketName(), 63)).append(" | ");
             if(flags != null && flags.startsWith("-l")) {
-                sb.append(" - ").append(b.getAccessKey()).append(" - ").append(b.getSecretKey());
+                sb.append(StringPaddingUtil.pad(b.getAccessKey(), 21, true)).append(" | ")
+                        .append(StringPaddingUtil.pad(b.getSecretKey(),40, true)).append(" |");
+
             }
             sb.append("\n");
         }
+        sb.append("+-").append(StringPaddingUtil.pad("-", 33, false, "-")).append("-+-")
+                .append(StringPaddingUtil.pad("-", 63, false, "-")).append("-+");
+        if(flags != null && flags.startsWith("-l")) {
+            sb.append(StringPaddingUtil.pad("-", 22, false, "-")).append("-+-")
+                    .append(StringPaddingUtil.pad("-",40, false, "-")).append("-+");
+        } else {
+            sb.append("\n");
+        }
+
         return sb.toString();
     }
 
@@ -153,14 +307,54 @@ public class S3Shell implements ShellCommandHandler {
                           @Param(name = "secretKey",
                                   description = "The secret key for the bucket")String secretKey) {
 
+
+        if(alias != null && alias.length() > 49) {
+
+        }
         Bucket aBucket = new Bucket(alias,bucketName,accessKey,secretKey);
-        bucketRepo.save(aBucket);
-        System.out.println( "bucket count: " + bucketRepo.count());
+        if(!buckets.containsKey(aBucket.getAlias())) {
+            buckets.put(aBucket.getAlias(), aBucket);
+        }
+        saveBucketsToFile(new ArrayList<Bucket>(buckets.values()), null);
+        System.out.println( "bucket count: " + buckets.size());
 
         return "Added bucket " + bucketName + " with an alias of " + alias;
 
 
     }
+
+    private void saveBucketsToFile(List<Bucket> buckets, String fileName) {
+
+        try {
+            FileWriter writer;
+
+            if (fileName != null && fileName.length() > 0) {
+                writer = new FileWriter(fileName);
+            } else {
+                writer = new FileWriter(s3HomeDirectory + File.separator + BUCKET_STORAGE_FILE_NAME);
+            }
+            Type listType = new TypeToken<List<Bucket>>() {}.getType();
+            gson.toJson(buckets, listType, writer);
+            writer.flush();
+            writer.close();
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    private void saveCommandsToFile(List<String> commands) {
+
+        try {
+            FileWriter writer = new FileWriter(s3HomeDirectory + File.separator + COMMAND_STORAGE_FILE_NAME);
+            Type listType = new TypeToken<List<String>>() {}.getType();
+            gson.toJson(commands, listType, writer);
+            writer.flush();
+            writer.close();
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
 
     @Command(description = "Removes a bucket from the list of buckets in Blister",
              abbrev="rmb")
@@ -168,11 +362,11 @@ public class S3Shell implements ShellCommandHandler {
                                       description = "The alias by which the bucket is referenced")String bucketAlias) {
 
         StringBuilder sb = new StringBuilder();
-        List<Bucket> buckets = bucketRepo.findByAlias(bucketAlias);
-        sb.append("Found " + buckets.size() + " for removal").append("\n");
-        for(Bucket deleteMe : buckets) {
-            bucketRepo.delete(deleteMe);
-            sb.append(deleteMe.getAlias() + " has been deleted").append("\n");
+        if(buckets.containsKey(bucketAlias)) {
+            buckets.remove(bucketAlias);
+            sb.append("bucket named " + bucketAlias + " has been deleted");
+        } else {
+            sb.append("no bucket named " + bucketAlias + " found");
         }
         return sb.toString();
     }
@@ -211,9 +405,10 @@ public class S3Shell implements ShellCommandHandler {
             description = "sets the current bucket to the one associated with the passed in alias.")String bucketAlias) {
 
         StringBuilder sb = new StringBuilder();
-        List<Bucket> buckets = bucketRepo.findByAlias(bucketAlias);
-        if(buckets.size() > 0) {
-            selectedBucket = buckets.get(0);
+//        List<Bucket> buckets = buckets.get//bucketRepo.findByAlias(bucketAlias);
+
+        selectedBucket = buckets.get(bucketAlias);
+        if(selectedBucket != null) {
             AWSCredentials awsCredentials = new BasicAWSCredentials(selectedBucket.getAccessKey(), selectedBucket.getSecretKey());
             s3client = new AmazonS3Client(awsCredentials, new ClientConfiguration());
             presentWorkingDirectory = "/";
@@ -351,14 +546,12 @@ public class S3Shell implements ShellCommandHandler {
              abbrev="hist")
     public String history() {
 
+        int count = 1;
+
         StringBuilder sb = new StringBuilder();
-        Iterable<CommandHistory> history = commandRepo.findAll();
-        Iterator<CommandHistory> historyIt = history.iterator();
-        long historyCount = 1;
-        while(historyIt.hasNext()) {
-            CommandHistory his = historyIt.next();
-            sb.append(his.getId()).append("  ").append(his.getCommand()).append("\n");
-            historyCount++;
+        for(String command : commandHistory) {
+            sb.append(count).append("  ").append(command).append("\n");
+            count++;
         }
         return sb.toString();
     }
@@ -473,12 +666,23 @@ public class S3Shell implements ShellCommandHandler {
         }
         try {
             Reader reader = new FileReader(inputFile);
-            ValueProcessorProvider provider = new ValueProcessorProvider();
-            CSVEntryParser<Bucket> entryParser = new AnnotationEntryParser<Bucket>(Bucket.class, provider);
-            CSVReader<Bucket> bucketsFromCsv = new CSVReaderBuilder<Bucket>(reader).strategy(CSVStrategy.UK_DEFAULT).entryParser(entryParser).build();
-            List<Bucket> bucketsList = bucketsFromCsv.readAll();
-            for(Bucket b : bucketsList) {
-                bucketRepo.save(b);
+
+            try {
+
+                GsonBuilder builder = new GsonBuilder();
+
+                // create local builder because the member variable isn't initialized at this time.
+                Gson myGson = builder.create();
+
+                Bucket[] bucketsFromFile = myGson.fromJson(reader, Bucket[].class);
+
+                for(Bucket b: bucketsFromFile) {
+                    buckets.put(b.getAlias(), b);
+                }
+
+                reader.close();
+            } catch(IOException ioe) {
+                logger.error(ioe.getMessage(), ioe);
             }
         } catch (IOException e) {
             logger.error(e.getMessage(),e);
@@ -511,16 +715,16 @@ public class S3Shell implements ShellCommandHandler {
         List<Bucket>bucketsForExport = new ArrayList<Bucket>();
 
         if(bucketNames == null) {
-            Iterable<Bucket> buckets = bucketRepo.findAll();
-            for(Bucket b : buckets) {
+//            Iterable<Bucket> buckets = bucketRepo.findAll();
+            for(Bucket b : buckets.values()) {
                 bucketsForExport.add(b);
             }
         } else {
             String[] specifiedBuckets = bucketNames.split(",");
             for(String bucketName : specifiedBuckets) {
-                List<Bucket> foundBucket = bucketRepo.findByAlias(bucketName);
-                if(foundBucket != null && foundBucket.size() > 0) {
-                    bucketsForExport.addAll(foundBucket);
+                Bucket foundBucket = buckets.get(bucketName);
+                if(foundBucket != null ) {
+                    bucketsForExport.add(foundBucket);
                 }
             }
         }
@@ -533,19 +737,8 @@ public class S3Shell implements ShellCommandHandler {
                     return "unable to create missing parent directories for " + fileName;
                 }
             }
-            try {
-                FileWriter bucketCsvWriter = new FileWriter(bucketCsvFile);
-                CSVWriter<Bucket> csvWriter =
-                       new CSVWriterBuilder<Bucket>(bucketCsvWriter).entryConverter(new BucketEntryConverter()).strategy(CSVStrategy.UK_DEFAULT).build();
-
-                csvWriter.writeAll(bucketsForExport);
-                csvWriter.flush();
-                csvWriter.close();
-                return "wrote " + bucketsForExport.size() + " to file named " + fileName ;
-            } catch (IOException e) {
-                logger.error(e.getMessage(),e);
-                return "failed to write to " + fileName;
-            }
+            saveBucketsToFile(bucketsForExport, bucketCsvFile.getPath());
+            return "wrote " + bucketsForExport.size() + " to file named " + fileName ;
         } else {
             return "fileName parameter cannot be null";
         }
@@ -574,20 +767,24 @@ public class S3Shell implements ShellCommandHandler {
      * @param cmdLine
      * @throws CLIException
      */
+
+//    @Override
+//    public void processCommand(String cmdLine) throws CLIException {
+//
+//    }
     @Override
     public void processCommand(String cmdLine) throws CLIException {
 
         if(cmdLine != null && cmdLine.startsWith("!")) {
             String[] commandParts = cmdLine.split(" ");
-            long commandId = Long.parseLong(commandParts[1].trim());
-            CommandHistory hist = commandRepo.findOne(commandId);
-            CommandHistory newHist = new CommandHistory();
-            newHist.setCommand(hist.getCommand());
-            commandRepo.save(newHist);
+            String commandValue = commandParts[1].trim();
+            commandHistory.add(commandValue);
             return;
         }
-        CommandHistory history = new CommandHistory(cmdLine);
-        commandRepo.save(history);
+        commandHistory.add(cmdLine);
+
+
+        saveCommandsToFile(commandHistory);
 
     }
 
@@ -597,29 +794,21 @@ public class S3Shell implements ShellCommandHandler {
     public void bang(@Param(name = "commandHistory",
                             description = "The command number to re-excute.") Integer commandNumber) {
 
-        CommandHistory history = commandRepo.findOne(commandNumber.longValue());
+        String command = commandHistory.get(commandNumber-1);
+
         try {
-            shell.processLine(history.getCommand());
+            shell.processLine(command);
         } catch (CLIException e) {
             e.printStackTrace();
         }
     }
 
-    @Override
     public void cliEnterLoop() {
 
     }
 
-    @Override
     public void cliLeaveLoop() {
 
     }
 
-    public static void main(String[] args) throws IOException {
-
-        ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
-
-        shell = ShellFactory.createConsoleShell("s3sh", "S3 Shell", new S3Shell(context));
-        shell.commandLoop();
-    }
 }

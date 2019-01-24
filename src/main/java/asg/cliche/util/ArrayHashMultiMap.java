@@ -5,6 +5,9 @@
 
 package asg.cliche.util;
 
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -16,6 +19,8 @@ import java.util.Set;
  *
  * @author ASG
  */
+@Primary
+@Component
 public final class ArrayHashMultiMap<K, V> implements MultiMap<K, V> {
 
     private Map<K, List<V>> listMap;

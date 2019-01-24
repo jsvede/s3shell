@@ -27,50 +27,24 @@
  */
 package jds.s3shell.entities;
 
-import com.googlecode.jcsv.annotations.MapToColumn;
-
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
-
 /**
  * Entity class for storing the data about a bucket.
  *
  * @author jsvede
  */
-@Entity
-@Table(name = "bucket")
 public class Bucket {
 
-    @Id
-    @GeneratedValue(strategy= GenerationType.IDENTITY)
-    private Long id;
 
-    @MapToColumn(column=0)
-    @Column(name = "alias", nullable = false)
     private String alias;
 
-    @MapToColumn(column=1)
-    @Column(name = "bucket_name", nullable = false)
     private String bucketName;
 
-    @MapToColumn(column=2)
-    @Column(name = "access_key", nullable = false)
     private String accessKey;
 
-    @MapToColumn(column=3)
-    @Column(name = "secret_key", nullable = false)
     private String secretKey;
 
-    @MapToColumn(column=4)
-    @Column(name = "description")
     private String description;
 
-    @MapToColumn(column=5)
-    @Column(name = "region")
     private String region;
 
     public Bucket() {
@@ -83,20 +57,20 @@ public class Bucket {
         this.secretKey = secretKey;
     }
 
+    public Bucket(String alias, String bucketName, String accessKey, String secretKey, String description, String region) {
+        this.alias = alias;
+        this.bucketName = bucketName;
+        this.accessKey = accessKey;
+        this.secretKey = secretKey;
+        this.description = description;
+        this.region = region;
+    }
     public String getRegion() {
         return region;
     }
 
     public void setRegion(String region) {
         this.region = region;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public String getDescription() {
