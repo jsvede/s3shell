@@ -1,4 +1,4 @@
-#S3Shell
+# S3Shell
 A command line utility for working with S3 Buckets in AWS. S3Shell providers a file system like experience for
 moving interacting with a set of buckets outside of the AWS console. Using S3Shell you do things like:
 
@@ -11,7 +11,7 @@ moving interacting with a set of buckets outside of the AWS console. Using S3She
 * Delete files
 
 
-##S3Shell Uses Cliche
+## S3Shell Uses Cliche
 S3Shell uses an excellent library called Cliche that provides the infrastructure for building a clean command line
 application in Java. Cliche gives you a collection of annotations that truly simplifies the work of building a 
 command line. You can get more info about Cliche here:
@@ -22,14 +22,14 @@ I've added one interface to Cliche that allows S3Shell to hook into the commands
 the command history, otherwise I am using Cliche as it was written. I am grateful to Anton Grigoryev, the author
 of Cliche, for his answers on how to use the library.
 
-##Getting S3Shell
+## Getting S3Shell
 You can get the current version of the complete command line as executable in the releases/current directory at the 
 root of this project.
 
-##Dependencies
+## Dependencies
 You'll need to have a version of Java installed, 1.7 or higher, in order to use s3shell.
 
-##Installing S3Shell
+## Installing S3Shell
 After downloading the release of your choice, you install S3Shell by unzipping the zip file archive. 
 This will create a directory named s3shell in whatever location.
 ```
@@ -41,7 +41,7 @@ s3shell/s3shell.bat
 The jar file is an all inclusive jar and includes all the required dependencies. The s3shell.sh is the script that
 starts the shell. The log4.xml helps control logging to the terminal. All 3 are required.
 
-##Starting S3Shell
+## Starting S3Shell
 To start s3shell, simply execute the shell script. Once it has started you should see:
 
 ```
@@ -54,7 +54,7 @@ You are now in the s3shell!
 ## Storage Files
 S3Shell will create a folder in your home directory called ~/.s3shell in which it will store the bucket configurations and the command history.
 
-##Using S3Shell
+## Using S3Shell
 After the shell starts one of the first things you can do is get a list of commands supported. The help infrastructure
 is provided by Cliche. To list the commands, enter ?list:
 ```
@@ -88,20 +88,20 @@ bucketName	String	The literal value for the bucket name
 accessKey	String	The access key for the bucket
 secretKey	String	The secret key for the bucket
 ```
-All commands in S3Shell should documented well enough for you to understand how to use them without having them documented
+All commands in S3Shell should be documented well enough for you to understand how to use them without having them documented
 here. If not, please send me a note and I'll fix it.
 
-##Exiting the Shell
+## Exiting the Shell
 Simply type 'exit' and the shell will terminate and return you to the OS command line.
 
-##Supported Operating Systems
+## Supported Operating Systems
 Linux and OS X and Windows (experimental).
 
-##Command
+## Command
 Cliche has 2 great built-in features for help: ?list and ?help . List shows the commands and their parameters
 while Help lets you get more info for a given command.
 
-###List Buckets
+### List Buckets
 ```
 Command: list-buckets
 Abbrev:  lb
@@ -112,7 +112,7 @@ Description: Lists the buckets you have added to your instance of S3Shell. The c
 argument "-la" which will show the access key and the secret key. Normally it only shows the bucket name and the
 bucket alias.
 
-###Add Buckets
+### Add Buckets
 ```
 Command: add-bucket
 Abbrev:  add
@@ -127,7 +127,7 @@ secretKey	String	The secret key for the bucket
 This is way you can manually add a bucket to the list of buckets being managed by this instance. You can also import
 buckets via a CSV file using the import command.
 
-###Importing Buckets
+### Importing Buckets
 ```
 Command: import-buckets
 Abbrev:  import
@@ -137,7 +137,7 @@ Number of parameters: 1
 fileName	String	The fully qualified path and file name of your CSV file from which to read.
 ```
 
-###Exporting Buckets
+### Exporting Buckets
 ```
 Command: export-buckets
 Abbrev:  export
@@ -146,7 +146,7 @@ Description: Export all buckets from this instance of S3Shell to a CSV file.
 Number of parameters: 1
 fileName	String	The fully qualified path and file name of the file you wish to write to.
 ```
-###Removing a Bucket
+### Removing a Bucket
 ```
 Command: remove-bucket
 Abbrev:  rmb
